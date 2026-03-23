@@ -267,10 +267,92 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .empty-msg{font-size:14px;}
 
 /* RESPONSIVE */
+/* ── MOBILE BOTTOM NAV ── */
+.mobile-store-nav {
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:250;
+  background:var(--surface);border-top:1px solid var(--border2);
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.mobile-store-nav::-webkit-scrollbar{display:none;}
+.mobile-store-nav-inner{
+  display:flex;gap:2px;padding:6px 8px;
+  min-width:max-content;
+}
+.mobile-store-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 12px;border-radius:8px;
+  font-size:10px;font-weight:700;letter-spacing:0.5px;
+  color:var(--muted);cursor:pointer;transition:all 0.15s;
+  white-space:nowrap;min-width:64px;
+  border:1px solid transparent;
+}
+.mobile-store-btn.active{
+  background:var(--surface2);color:var(--text);border-color:var(--border2);
+}
+.mobile-store-btn .dot{width:6px;height:6px;border-radius:50%;}
+.mobile-store-btn .score{font-family:var(--mono);font-size:12px;font-weight:600;}
+
 @media(max-width:768px){
+  /* Layout */
   .sidebar{display:none;}
-  .main{padding:16px;}
-  .manager-grid{grid-template-columns:1fr;}
+  .mobile-store-nav{display:block;}
+  .main{padding:12px 12px 80px;}
+  .layout{min-height:calc(100vh - 56px);}
+
+  /* Header */
+  .header{padding:0 14px;height:50px;}
+  .header-logo{font-size:11px;}
+
+  /* Date range bar */
+  .date-range-bar{gap:8px;margin-bottom:16px;}
+  .preset-btns{gap:2px;padding:3px;}
+  .period-btn{padding:5px 10px;font-size:11px;}
+  .date-range-inputs{padding:5px 10px;gap:6px;flex-wrap:wrap;}
+  .date-label{font-size:9px;}
+  .date-input{font-size:11px;padding:3px 6px;}
+
+  /* Page title */
+  .page-title{margin-bottom:14px;flex-wrap:wrap;gap:6px;}
+  .page-title h1{font-size:17px;}
+  .page-title .sub{font-size:11px;}
+
+  /* Store summary pills — horizontal scroll */
+  .store-summary{
+    flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;padding-bottom:4px;margin-bottom:20px;
+  }
+  .store-summary::-webkit-scrollbar{display:none;}
+  .summary-pill{min-width:100px;flex-shrink:0;padding:8px 12px;}
+  .pill-value{font-size:17px;}
+  .pill-label{font-size:9px;}
+  .pill-sub{font-size:10px;}
+
+  /* Manager grid */
+  .manager-grid{grid-template-columns:1fr;gap:10px;}
+
+  /* Manager cards */
+  .card-name{font-size:14px;}
+  .card-score{font-size:20px;}
+  .card-metrics{padding:10px 14px;gap:8px;}
+  .metric-name{font-size:10px;width:62px;}
+  .metric-val{font-size:11px;width:46px;}
+
+  /* Detail panel — full screen on mobile */
+  .detail-panel{
+    width:100vw;max-width:100vw;
+    border-left:none;
+    padding:20px 16px 40px;
+  }
+  .panel-close{top:14px;right:14px;}
+  .panel-name{font-size:18px;}
+  .panel-meta{font-size:11px;margin-bottom:18px;}
+  .history-table td{padding:6px 6px;font-size:11px;}
+  .history-table th{padding:5px 6px;font-size:9px;}
+
+  /* Summary grid in panel — 2 cols on mobile */
+  #panelContent .summary-pill{padding:8px 10px;}
 }
 </style>
 </head>
@@ -322,6 +404,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="store-summary" id="storeSummary"></div>
     <div class="manager-grid" id="managerGrid"></div>
   </div>
+</div>
+
+<!-- MOBILE BOTTOM STORE NAV -->
+<div class="mobile-store-nav">
+  <div class="mobile-store-nav-inner" id="mobileStoreNav"></div>
 </div>
 
 <!-- DETAIL PANEL -->
@@ -6135,6 +6222,22 @@ function storeScoreColor(id) {
   return avg>=75?'var(--green)':avg>=55?'var(--yellow)':'var(--red)';
 }
 
+function renderMobileStoreNav() {
+  const nav = document.getElementById('mobileStoreNav');
+  if (!nav) return;
+  nav.innerHTML = Object.entries(STORES).map(([id, store]) => {
+    const active = id === currentStore ? 'active' : '';
+    const data = filterByPeriod(RAW.filter(s => s.store === id));
+    const avg = data.length ? Math.round(data.reduce((a,s) => a + calcShiftScore(s), 0) / data.length) : null;
+    const col = avg === null ? 'var(--muted)' : avg >= 75 ? 'var(--green)' : avg >= 55 ? 'var(--yellow)' : 'var(--red)';
+    return `<div class="mobile-store-btn ${active}" onclick="selectStore('${id}')">
+      <div class="dot" style="background:${col}"></div>
+      <div style="font-size:10px;color:${active?'var(--text)':'var(--muted)'};font-weight:600">${store.name}</div>
+      <div class="score" style="color:${col}">${avg !== null ? avg : '—'}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderStoreNav() {
   const nav = document.getElementById('storeNav');
   nav.innerHTML = Object.entries(STORES).map(([id, store]) => {
@@ -6152,6 +6255,7 @@ function renderStoreNav() {
       <div style="font-family:var(--mono);font-size:11px;color:${col};font-weight:600;margin-left:6px">${scoreDisplay}</div>
     </div>`;
   }).join('');
+  renderMobileStoreNav();
 }
 
 function selectStore(id) {
@@ -6159,6 +6263,7 @@ function selectStore(id) {
   document.getElementById('pageTitle').textContent    = STORES[id].name;
   document.getElementById('pageSubtitle').textContent = `#${id} · ${STORES[id].location}`;
   renderStoreNav();
+  renderMobileStoreNav();
   renderGrid();
 }
 
@@ -6169,6 +6274,7 @@ function selectStore(id) {
 // ============================================================
 
 renderStoreNav();
+renderMobileStoreNav();
 renderGrid();
 </script>
 </body>
