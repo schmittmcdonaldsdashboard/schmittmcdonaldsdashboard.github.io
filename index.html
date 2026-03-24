@@ -428,7 +428,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 const STORES = {
   '4513':  { name: 'Fox Valley',     location: 'Naperville'   },
-  '5209':  { name: 'Market Meadows', location: 'Champaign'    },
+  '5209':  { name: 'Market Meadows', location: 'Naperville'   },
   '5289':  { name: 'Sandwich',       location: 'Sandwich'     },
   '12285': { name: 'Weber Rd',       location: 'Bolingbrook'  },
   '13639': { name: 'Warrenville',    location: 'Warrenville'  },
@@ -443,10 +443,19 @@ const STORES = {
 };
 
 // Thresholds
-const T = {
-  oepe:  { good: 110, warn: 140 },   // seconds
-  labor: { good: 27,  warn: 33  },   // percent
+// Per-shift thresholds — 25th pct = good (green), 75th pct = warn (yellow), above = red
+// Calibrated so ~25% green, ~50% yellow, ~25% red across all shifts
+const THRESHOLDS = {
+  Morning:   { oepe: { good:  84, warn: 118 }, labor: { good: 24.8, warn: 30.6 } },
+  Lunch:     { oepe: { good:  90, warn: 133 }, labor: { good: 20.4, warn: 25.9 } },
+  Afternoon: { oepe: { good:  99, warn: 146 }, labor: { good: 17.0, warn: 23.4 } },
+  Evening:   { oepe: { good: 102, warn: 149 }, labor: { good: 20.9, warn: 25.6 } },
+  Closing:   { oepe: { good: 123, warn: 186 }, labor: { good: 29.8, warn: 47.0 } },
+  Overnight: { oepe: { good: 136, warn: 254 }, labor: { good: 24.8, warn: 58.2 } },
 };
+function getT(shift) { return THRESHOLDS[shift] || THRESHOLDS.Morning; }
+// Legacy fallback
+const T = THRESHOLDS.Morning;
 
 // Raw shift data — each entry = one shift occurrence
 // preshift: 'complete' | 'late' | 'incomplete'
@@ -897,6 +906,13 @@ const RAW = [
   { date:'2026-03-22', store:'12285', manager:"Erick Ortega", shift:'Lunch', timeSlot:'11am–2pm', labor:22.44, oepe:143, sales:3361.0, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'12285', manager:"Sheren Mohuiddin", shift:'Morning', timeSlot:'4am–11am', labor:26.52, oepe:119, sales:3973.47, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'12285', manager:"Dorisbella Joseph", shift:'Overnight', timeSlot:'12am–4am', labor:45.12, oepe:233, sales:580.28, preshift:'late', joltChecklist:null },
+  // ── Weber Rd (12285) · 2026-03-23 ──
+  { date:'2026-03-23', store:'12285', manager:"Nelly Cruz Flores", shift:'Afternoon', timeSlot:'2pm–4pm', labor:21.58, oepe:114, sales:1527.74, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'12285', manager:"Eliete Moreno", shift:'Closing', timeSlot:'9pm–12am', labor:26.77, oepe:195, sales:1256.8, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'12285', manager:"Eliete Moreno", shift:'Evening', timeSlot:'4pm–9pm', labor:22.52, oepe:151, sales:3880.04, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'12285', manager:"Nelly Cruz Flores", shift:'Lunch', timeSlot:'11am–2pm', labor:24.0, oepe:132, sales:2296.25, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'12285', manager:"Sheren Mohuiddin", shift:'Morning', timeSlot:'4am–11am', labor:33.73, oepe:106, sales:2925.41, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'12285', manager:"Luis Arellano", shift:'Overnight', timeSlot:'12am–4am', labor:26.78, oepe:325, sales:710.47, preshift:'late', joltChecklist:null },
   // ── Warrenville (13639) · 2026-01-01 ──
   { date:'2026-01-01', store:'13639', manager:"Darline Cuautle", shift:'Afternoon', timeSlot:'2pm–4pm', labor:24.3, oepe:132, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'13639', manager:"Darline Cuautle", shift:'Closing', timeSlot:'9pm–12am', labor:39.4, oepe:197, sales:null, preshift:'unknown', joltChecklist:null },
@@ -1272,6 +1288,12 @@ const RAW = [
   { date:'2026-03-22', store:'13639', manager:"Nicole Jabon", shift:'Evening', timeSlot:'4pm–9pm', labor:24.37, oepe:160, sales:2171.91, preshift:'incomplete', joltChecklist:null },
   { date:'2026-03-22', store:'13639', manager:"Camila Rosas", shift:'Lunch', timeSlot:'11am–2pm', labor:33.43, oepe:139, sales:1450.49, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'13639', manager:"Darline Cuautle", shift:'Morning', timeSlot:'4am–11am', labor:25.63, oepe:153, sales:2810.35, preshift:'incomplete', joltChecklist:null },
+  // ── Warrenville (13639) · 2026-03-23 ──
+  { date:'2026-03-23', store:'13639', manager:"Gloria Tochimani", shift:'Afternoon', timeSlot:'2pm–4pm', labor:26.2, oepe:95, sales:751.21, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'13639', manager:"Darline Cuautle", shift:'Closing', timeSlot:'9pm–12am', labor:65.31, oepe:122, sales:372.25, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'13639', manager:"Darline Cuautle", shift:'Evening', timeSlot:'4pm–9pm', labor:30.01, oepe:120, sales:1978.08, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'13639', manager:"Gloria Tochimani", shift:'Lunch', timeSlot:'11am–2pm', labor:25.73, oepe:118, sales:1562.76, preshift:'late', joltChecklist:null },
+  { date:'2026-03-23', store:'13639', manager:"Antonia Rodriguez", shift:'Morning', timeSlot:'4am–11am', labor:28.42, oepe:108, sales:2556.15, preshift:'incomplete', joltChecklist:null },
   // ── Yorkville 2 (14843) · 2026-01-01 ──
   { date:'2026-01-01', store:'14843', manager:"Gia Mendez", shift:'Afternoon', timeSlot:'2pm–4pm', labor:25.3, oepe:139, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'14843', manager:"Luke Daggett", shift:'Closing', timeSlot:'9pm–12am', labor:65.6, oepe:173, sales:null, preshift:'unknown', joltChecklist:null },
@@ -1656,6 +1678,12 @@ const RAW = [
   { date:'2026-03-22', store:'14843', manager:"Saul Perez", shift:'Evening', timeSlot:'4pm–9pm', labor:24.53, oepe:134, sales:1913.7, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'14843', manager:"Julian Mendez", shift:'Lunch', timeSlot:'11am–2pm', labor:17.51, oepe:194, sales:1970.29, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'14843', manager:"Anna Knox", shift:'Morning', timeSlot:'4am–11am', labor:24.97, oepe:118, sales:2202.62, preshift:'complete', joltChecklist:null },
+  // ── Yorkville 2 (14843) · 2026-03-23 ──
+  { date:'2026-03-23', store:'14843', manager:"Bethany Benedict", shift:'Afternoon', timeSlot:'2pm–4pm', labor:20.08, oepe:163, sales:967.51, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'14843', manager:"Kevin Vazquez", shift:'Closing', timeSlot:'9pm–12am', labor:50.79, oepe:174, sales:167.1, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'14843', manager:"Kevin Vazquez", shift:'Evening', timeSlot:'4pm–9pm', labor:27.74, oepe:187, sales:1606.17, preshift:'incomplete', joltChecklist:null },
+  { date:'2026-03-23', store:'14843', manager:"Bethany Benedict", shift:'Lunch', timeSlot:'11am–2pm', labor:22.6, oepe:128, sales:1573.13, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'14843', manager:"Brandy Melchi", shift:'Morning', timeSlot:'4am–11am', labor:33.77, oepe:78, sales:1760.13, preshift:'complete', joltChecklist:null },
   // ── Naper West (16661) · 2026-01-01 ──
   { date:'2026-01-01', store:'16661', manager:"Hugo Cielo", shift:'Afternoon', timeSlot:'2pm–4pm', labor:34.8, oepe:93, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'16661', manager:"Adriana Cuacuas", shift:'Closing', timeSlot:'9pm–12am', labor:42.5, oepe:226, sales:null, preshift:'unknown', joltChecklist:null },
@@ -2053,6 +2081,12 @@ const RAW = [
   { date:'2026-03-22', store:'16661', manager:"Francisca Vargas", shift:'Evening', timeSlot:'4pm–9pm', labor:32.48, oepe:90, sales:2005.4, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'16661', manager:"Adriana Cuacuas", shift:'Lunch', timeSlot:'11am–2pm', labor:17.92, oepe:125, sales:2473.71, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'16661', manager:"Adriana Cuacuas", shift:'Morning', timeSlot:'4am–11am', labor:22.76, oepe:115, sales:2655.38, preshift:'complete', joltChecklist:null },
+  // ── Naper West (16661) · 2026-03-23 ──
+  { date:'2026-03-23', store:'16661', manager:"Hugo Cielo", shift:'Afternoon', timeSlot:'2pm–4pm', labor:26.68, oepe:82, sales:953.5, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'16661', manager:"Jaqueline Jimenez", shift:'Closing', timeSlot:'9pm–12am', labor:38.95, oepe:144, sales:486.44, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'16661', manager:"Jaqueline Jimenez", shift:'Evening', timeSlot:'4pm–9pm', labor:20.94, oepe:99, sales:2722.29, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'16661', manager:"Margarita Cuacuas Lopez", shift:'Lunch', timeSlot:'11am–2pm', labor:23.06, oepe:146, sales:1999.97, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'16661', manager:"Adriana Cuacuas", shift:'Morning', timeSlot:'4am–11am', labor:28.16, oepe:115, sales:2238.46, preshift:'complete', joltChecklist:null },
   // ── New York St (19226) · 2026-01-01 ──
   { date:'2026-01-01', store:'19226', manager:"Yuridian Hernandez Vargas", shift:'Afternoon', timeSlot:'2pm–4pm', labor:16.9, oepe:97, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'19226', manager:"Dora Contreras", shift:'Closing', timeSlot:'9pm–12am', labor:33.0, oepe:94, sales:null, preshift:'unknown', joltChecklist:null },
@@ -2456,6 +2490,12 @@ const RAW = [
   { date:'2026-03-22', store:'19226', manager:"Dora Contreras", shift:'Evening', timeSlot:'4pm–9pm', labor:23.76, oepe:105, sales:6305.85, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'19226', manager:"Yuridian Hernandez Vargas", shift:'Lunch', timeSlot:'11am–2pm', labor:29.59, oepe:93, sales:3124.3, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'19226', manager:"Teodora Lopez", shift:'Morning', timeSlot:'4am–11am', labor:20.07, oepe:118, sales:5877.48, preshift:'complete', joltChecklist:null },
+  // ── New York St (19226) · 2026-03-23 ──
+  { date:'2026-03-23', store:'19226', manager:"Teodora Lopez", shift:'Afternoon', timeSlot:'2pm–4pm', labor:15.85, oepe:105, sales:2184.8, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'19226', manager:"Dora Contreras", shift:'Closing', timeSlot:'9pm–12am', labor:52.38, oepe:66, sales:905.28, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'19226', manager:"Dora Contreras", shift:'Evening', timeSlot:'4pm–9pm', labor:26.07, oepe:93, sales:4344.67, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'19226', manager:"Teodora Lopez", shift:'Lunch', timeSlot:'11am–2pm', labor:28.73, oepe:75, sales:2367.6, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'19226', manager:"Janeth Enriquez Bedolla", shift:'Morning', timeSlot:'4am–11am', labor:23.24, oepe:85, sales:4961.42, preshift:'complete', joltChecklist:null },
   // ── Eola Commons (22511) · 2026-01-01 ──
   { date:'2026-01-01', store:'22511', manager:"Cecilia Carillo", shift:'Afternoon', timeSlot:'2pm–4pm', labor:31.4, oepe:53, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'22511', manager:"Leslie Fernandez", shift:'Closing', timeSlot:'9pm–12am', labor:16.6, oepe:242, sales:null, preshift:'unknown', joltChecklist:null },
@@ -2895,6 +2935,13 @@ const RAW = [
   { date:'2026-03-22', store:'22511', manager:"Maria Blanco", shift:'Evening', timeSlot:'4pm–9pm', labor:27.21, oepe:133, sales:2746.91, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'22511', manager:"Leslie Fernandez", shift:'Lunch', timeSlot:'11am–2pm', labor:29.18, oepe:137, sales:1732.95, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'22511', manager:"Fabiola Reyes", shift:'Morning', timeSlot:'4am–11am', labor:24.55, oepe:93, sales:2746.42, preshift:'complete', joltChecklist:null },
+  // ── Eola Commons (22511) · 2026-03-23 ──
+  { date:'2026-03-23', store:'22511', manager:"Reyna Cruz", shift:'Afternoon', timeSlot:'2pm–4pm', labor:26.25, oepe:95, sales:1050.77, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'22511', manager:"Leslie Fernandez", shift:'Closing', timeSlot:'9pm–12am', labor:33.57, oepe:192, sales:993.34, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'22511', manager:"Leslie Fernandez", shift:'Evening', timeSlot:'4pm–9pm', labor:28.91, oepe:108, sales:2490.64, preshift:'incomplete', joltChecklist:null },
+  { date:'2026-03-23', store:'22511', manager:"Reyna Cruz", shift:'Lunch', timeSlot:'11am–2pm', labor:23.45, oepe:153, sales:1781.56, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'22511', manager:"Ana Jalapa", shift:'Morning', timeSlot:'4am–11am', labor:31.36, oepe:95, sales:2125.34, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'22511', manager:"Louse Fuenmayor", shift:'Overnight', timeSlot:'12am–4am', labor:26.52, oepe:166, sales:1186.52, preshift:'unknown', joltChecklist:null },
   // ── Locust (22772) · 2026-01-01 ──
   { date:'2026-01-01', store:'22772', manager:"Ariadne Herrera", shift:'Closing', timeSlot:'9pm–12am', labor:27.8, oepe:132, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'22772', manager:"Ariadne Herrera", shift:'Evening', timeSlot:'4pm–9pm', labor:19.7, oepe:126, sales:null, preshift:'complete', joltChecklist:null },
@@ -3268,6 +3315,12 @@ const RAW = [
   { date:'2026-03-22', store:'22772', manager:"Maribel Diaz", shift:'Evening', timeSlot:'4pm–9pm', labor:21.19, oepe:167, sales:3059.53, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'22772', manager:"Ariadne Herrera", shift:'Lunch', timeSlot:'11am–2pm', labor:26.55, oepe:150, sales:1997.67, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'22772', manager:"Martha Cortez", shift:'Morning', timeSlot:'4am–11am', labor:26.05, oepe:139, sales:3057.01, preshift:'complete', joltChecklist:null },
+  // ── Locust (22772) · 2026-03-23 ──
+  { date:'2026-03-23', store:'22772', manager:"Thalia Quitl", shift:'Afternoon', timeSlot:'2pm–4pm', labor:16.14, oepe:187, sales:1494.85, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'22772', manager:"Veronica Montes Guevara", shift:'Closing', timeSlot:'9pm–12am', labor:38.51, oepe:166, sales:556.71, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'22772', manager:"Veronica Montes Guevara", shift:'Evening', timeSlot:'4pm–9pm', labor:23.33, oepe:158, sales:3127.09, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'22772', manager:"Thalia Quitl", shift:'Lunch', timeSlot:'11am–2pm', labor:30.52, oepe:92, sales:1684.94, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'22772', manager:"Martha Cortez", shift:'Morning', timeSlot:'4am–11am', labor:24.86, oepe:110, sales:3436.64, preshift:'complete', joltChecklist:null },
   // ── Sugar Grove (34643) · 2026-01-01 ──
   { date:'2026-01-01', store:'34643', manager:"Angelica Deleon", shift:'Afternoon', timeSlot:'2pm–4pm', labor:26.1, oepe:93, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'34643', manager:"Angelica Deleon", shift:'Lunch', timeSlot:'11am–2pm', labor:20.1, oepe:113, sales:null, preshift:'incomplete', joltChecklist:null },
@@ -3643,6 +3696,12 @@ const RAW = [
   { date:'2026-03-22', store:'34643', manager:"Alexander Lopez", shift:'Evening', timeSlot:'4pm–9pm', labor:26.69, oepe:169, sales:1679.35, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'34643', manager:"Mark Friedman", shift:'Lunch', timeSlot:'11am–2pm', labor:27.7, oepe:69, sales:1841.33, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'34643', manager:"Angelica Deleon", shift:'Morning', timeSlot:'4am–11am', labor:21.25, oepe:252, sales:3164.81, preshift:'complete', joltChecklist:null },
+  // ── Sugar Grove (34643) · 2026-03-23 ──
+  { date:'2026-03-23', store:'34643', manager:"Mark Friedman", shift:'Afternoon', timeSlot:'2pm–4pm', labor:25.02, oepe:122, sales:1053.98, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'34643', manager:"Mark Friedman", shift:'Closing', timeSlot:'9pm–12am', labor:71.82, oepe:211, sales:146.39, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'34643', manager:"Mark Friedman", shift:'Evening', timeSlot:'4pm–9pm', labor:26.77, oepe:116, sales:2563.76, preshift:'late', joltChecklist:null },
+  { date:'2026-03-23', store:'34643', manager:"Alexander Lopez", shift:'Lunch', timeSlot:'11am–2pm', labor:26.21, oepe:149, sales:2010.04, preshift:'incomplete', joltChecklist:null },
+  { date:'2026-03-23', store:'34643', manager:"Alexander Lopez", shift:'Morning', timeSlot:'4am–11am', labor:36.28, oepe:131, sales:2691.14, preshift:'complete', joltChecklist:null },
   // ── South Eola (37469) · 2026-01-01 ──
   { date:'2026-01-01', store:'37469', manager:"Yael Hernandez", shift:'Afternoon', timeSlot:'2pm–4pm', labor:28.6, oepe:61, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'37469', manager:"Trinidad Tochimani Cuautle", shift:'Closing', timeSlot:'9pm–12am', labor:34.2, oepe:134, sales:null, preshift:'unknown', joltChecklist:null },
@@ -4020,6 +4079,12 @@ const RAW = [
   { date:'2026-03-22', store:'37469', manager:"Andrew Benbow", shift:'Evening', timeSlot:'4pm–9pm', labor:27.13, oepe:74, sales:2439.45, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'37469', manager:"Micheline Vargas", shift:'Lunch', timeSlot:'11am–2pm', labor:18.37, oepe:73, sales:2512.78, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'37469', manager:"Eufracia Medina Silva", shift:'Morning', timeSlot:'4am–11am', labor:20.72, oepe:73, sales:2802.43, preshift:'complete', joltChecklist:null },
+  // ── South Eola (37469) · 2026-03-23 ──
+  { date:'2026-03-23', store:'37469', manager:"Micheline Vargas", shift:'Afternoon', timeSlot:'2pm–4pm', labor:16.74, oepe:93, sales:1087.44, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'37469', manager:"Yael Hernandez", shift:'Closing', timeSlot:'9pm–12am', labor:72.32, oepe:126, sales:326.73, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'37469', manager:"Yael Hernandez", shift:'Evening', timeSlot:'4pm–9pm', labor:24.35, oepe:79, sales:2539.13, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'37469', manager:"Micheline Vargas", shift:'Lunch', timeSlot:'11am–2pm', labor:29.03, oepe:52, sales:1358.86, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'37469', manager:"Elsia Guerrero", shift:'Morning', timeSlot:'4am–11am', labor:32.83, oepe:70, sales:1765.18, preshift:'complete', joltChecklist:null },
   // ── Galena (38898) · 2026-01-01 ──
   { date:'2026-01-01', store:'38898', manager:"Angelica Elizarraraz", shift:'Afternoon', timeSlot:'2pm–4pm', labor:21.5, oepe:130, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'38898', manager:"Jose Silva", shift:'Closing', timeSlot:'9pm–12am', labor:24.8, oepe:171, sales:null, preshift:'unknown', joltChecklist:null },
@@ -4393,6 +4458,12 @@ const RAW = [
   { date:'2026-03-22', store:'38898', manager:"Marissa Stevens", shift:'Evening', timeSlot:'4pm–9pm', labor:26.06, oepe:100, sales:4102.2, preshift:'incomplete', joltChecklist:null },
   { date:'2026-03-22', store:'38898', manager:"Angelica Elizarraraz", shift:'Lunch', timeSlot:'11am–2pm', labor:19.09, oepe:123, sales:3055.0, preshift:'incomplete', joltChecklist:null },
   { date:'2026-03-22', store:'38898', manager:"Veronica Espino", shift:'Morning', timeSlot:'4am–11am', labor:21.24, oepe:127, sales:4527.85, preshift:'complete', joltChecklist:null },
+  // ── Galena (38898) · 2026-03-23 ──
+  { date:'2026-03-23', store:'38898', manager:"Angelica Elizarraraz", shift:'Afternoon', timeSlot:'2pm–4pm', labor:14.6, oepe:137, sales:1891.34, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'38898', manager:"Priscila Torres", shift:'Closing', timeSlot:'9pm–12am', labor:45.37, oepe:129, sales:691.18, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'38898', manager:"Priscila Torres", shift:'Evening', timeSlot:'4pm–9pm', labor:23.21, oepe:108, sales:4287.21, preshift:'incomplete', joltChecklist:null },
+  { date:'2026-03-23', store:'38898', manager:"Angelica Elizarraraz", shift:'Lunch', timeSlot:'11am–2pm', labor:22.89, oepe:93, sales:2480.62, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'38898', manager:"Erik Corral", shift:'Morning', timeSlot:'4am–11am', labor:24.91, oepe:111, sales:3756.44, preshift:'complete', joltChecklist:null },
   // ── Fox Valley (4513) · 2026-01-01 ──
   { date:'2026-01-01', store:'4513', manager:"Maybel Lopez", shift:'Afternoon', timeSlot:'2pm–4pm', labor:18.8, oepe:154, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'4513', manager:"Maura Xochitecatl Tecaxco", shift:'Closing', timeSlot:'9pm–12am', labor:37.8, oepe:207, sales:null, preshift:'unknown', joltChecklist:null },
@@ -4777,6 +4848,12 @@ const RAW = [
   { date:'2026-03-22', store:'4513', manager:"Andres Narvaez", shift:'Evening', timeSlot:'4pm–9pm', labor:25.54, oepe:105, sales:3091.56, preshift:'incomplete', joltChecklist:null },
   { date:'2026-03-22', store:'4513', manager:"Loraine Aramendiz", shift:'Lunch', timeSlot:'11am–2pm', labor:19.62, oepe:96, sales:2328.33, preshift:'incomplete', joltChecklist:null },
   { date:'2026-03-22', store:'4513', manager:"Maybel Lopez", shift:'Morning', timeSlot:'4am–11am', labor:27.18, oepe:93, sales:2204.38, preshift:'complete', joltChecklist:null },
+  // ── Fox Valley (4513) · 2026-03-23 ──
+  { date:'2026-03-23', store:'4513', manager:"Andres Narvaez", shift:'Afternoon', timeSlot:'2pm–4pm', labor:21.8, oepe:99, sales:1199.75, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'4513', manager:"Maura Xochitecatl Tecaxco", shift:'Closing', timeSlot:'9pm–12am', labor:50.94, oepe:156, sales:346.99, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'4513', manager:"Maura Xochitecatl Tecaxco", shift:'Evening', timeSlot:'4pm–9pm', labor:29.46, oepe:90, sales:2444.2, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'4513', manager:"Rogelio Garcia-Sanchez", shift:'Lunch', timeSlot:'11am–2pm', labor:22.42, oepe:89, sales:1863.28, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'4513', manager:"Sara Plazola", shift:'Morning', timeSlot:'4am–11am', labor:30.92, oepe:80, sales:2131.61, preshift:'complete', joltChecklist:null },
   // ── Market Meadows (5209) · 2026-01-01 ──
   { date:'2026-01-01', store:'5209', manager:"Elena Ugalde", shift:'Afternoon', timeSlot:'2pm–4pm', labor:22.3, oepe:135, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'5209', manager:"Lynn Opila", shift:'Closing', timeSlot:'9pm–12am', labor:41.8, oepe:108, sales:null, preshift:'unknown', joltChecklist:null },
@@ -5154,6 +5231,12 @@ const RAW = [
   { date:'2026-03-22', store:'5209', manager:"Noel Sandoval", shift:'Evening', timeSlot:'4pm–9pm', labor:24.73, oepe:186, sales:2557.93, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'5209', manager:"Jennifer Jurado", shift:'Lunch', timeSlot:'11am–2pm', labor:14.43, oepe:251, sales:2793.15, preshift:'complete', joltChecklist:null },
   { date:'2026-03-22', store:'5209', manager:"Francisco Roque", shift:'Morning', timeSlot:'4am–11am', labor:16.68, oepe:135, sales:2984.96, preshift:'complete', joltChecklist:null },
+  // ── Market Meadows (5209) · 2026-03-23 ──
+  { date:'2026-03-23', store:'5209', manager:"Jennifer Jurado", shift:'Afternoon', timeSlot:'2pm–4pm', labor:12.68, oepe:178, sales:1352.46, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'5209', manager:"Francisco Roque", shift:'Closing', timeSlot:'9pm–12am', labor:38.37, oepe:139, sales:421.21, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'5209', manager:"Francisco Roque", shift:'Evening', timeSlot:'4pm–9pm', labor:21.06, oepe:167, sales:2746.51, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'5209', manager:"Jennifer Jurado", shift:'Lunch', timeSlot:'11am–2pm', labor:18.17, oepe:129, sales:2358.51, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'5209', manager:"Yesenia Perez", shift:'Morning', timeSlot:'4am–11am', labor:28.42, oepe:138, sales:2096.16, preshift:'complete', joltChecklist:null },
   // ── Sandwich (5289) · 2026-01-01 ──
   { date:'2026-01-01', store:'5289', manager:"Maria Lopez", shift:'Afternoon', timeSlot:'2pm–4pm', labor:22.0, oepe:150, sales:null, preshift:'unknown', joltChecklist:null },
   { date:'2026-01-01', store:'5289', manager:"Alexandra Lopez", shift:'Closing', timeSlot:'9pm–12am', labor:24.6, oepe:166, sales:null, preshift:'unknown', joltChecklist:null },
@@ -5559,6 +5642,12 @@ const RAW = [
   { date:'2026-03-22', store:'5289', manager:"Cynthia Newson", shift:'Evening', timeSlot:'4pm–9pm', labor:26.16, oepe:125, sales:3060.65, preshift:'incomplete', joltChecklist:null },
   { date:'2026-03-22', store:'5289', manager:"Maria Lopez", shift:'Lunch', timeSlot:'11am–2pm', labor:16.2, oepe:146, sales:3190.68, preshift:'incomplete', joltChecklist:null },
   { date:'2026-03-22', store:'5289', manager:"Wendy Nevarez", shift:'Morning', timeSlot:'4am–11am', labor:22.2, oepe:136, sales:4203.65, preshift:'complete', joltChecklist:null },
+  // ── Sandwich (5289) · 2026-03-23 ──
+  { date:'2026-03-23', store:'5289', manager:"Alexandra Lopez", shift:'Afternoon', timeSlot:'2pm–4pm', labor:19.76, oepe:93, sales:1161.85, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'5289', manager:"Maria Lopez", shift:'Closing', timeSlot:'9pm–12am', labor:35.16, oepe:128, sales:625.18, preshift:'unknown', joltChecklist:null },
+  { date:'2026-03-23', store:'5289', manager:"Maria Lopez", shift:'Evening', timeSlot:'4pm–9pm', labor:29.15, oepe:80, sales:2539.99, preshift:'complete', joltChecklist:null },
+  { date:'2026-03-23', store:'5289', manager:"Alexandra Lopez", shift:'Lunch', timeSlot:'11am–2pm', labor:18.16, oepe:139, sales:2773.82, preshift:'incomplete', joltChecklist:null },
+  { date:'2026-03-23', store:'5289', manager:"Wendy Nevarez", shift:'Morning', timeSlot:'4am–11am', labor:27.56, oepe:90, sales:2800.69, preshift:'complete', joltChecklist:null },
 ];
 
 // Shifts with no FL Manager assigned
@@ -5772,15 +5861,17 @@ function getTrueLaborForStore(storeId, fromDate, toDate) {
 // SCORING ENGINE
 // ============================================================
 
-function scoreOEPE(v) {
-  if (v <= T.oepe.good) return 100;
-  if (v <= T.oepe.warn) return Math.round(100 - ((v - T.oepe.good) / (T.oepe.warn - T.oepe.good)) * 40);
-  return Math.max(0, Math.round(60 - ((v - T.oepe.warn) / 60) * 60));
+function scoreOEPE(v, shift) {
+  const t = getT(shift).oepe;
+  if (v <= t.good) return 100;
+  if (v <= t.warn) return Math.round(100 - ((v - t.good) / (t.warn - t.good)) * 40);
+  return Math.max(0, Math.round(60 - ((v - t.warn) / (t.warn * 0.4)) * 60));
 }
-function scoreLabor(v) {
-  if (v <= T.labor.good) return 100;
-  if (v <= T.labor.warn) return Math.round(100 - ((v - T.labor.good) / (T.labor.warn - T.labor.good)) * 40);
-  return Math.max(0, Math.round(60 - ((v - T.labor.warn) / 20) * 60));
+function scoreLabor(v, shift) {
+  const t = getT(shift).labor;
+  if (v <= t.good) return 100;
+  if (v <= t.warn) return Math.round(100 - ((v - t.good) / (t.warn - t.good)) * 40);
+  return Math.max(0, Math.round(60 - ((v - t.warn) / (t.warn * 0.4)) * 60));
 }
 function scorePreshift(v) {
   if (v === 'unknown') return null;
@@ -5793,10 +5884,18 @@ function scoreJolt(v) {
   return Math.max(0, Math.round(50 - ((60 - v) / 60) * 50));
 }
 function calcShiftScore(s) {
+  const ps = scorePreshift(s.preshift);
+  const oScore = scoreOEPE(s.oepe, s.shift);
+  const lScore = scoreLabor(s.labor, s.shift);
   if (s.joltChecklist !== null && s.joltChecklist !== undefined) {
-    return Math.round((scoreOEPE(s.oepe)*0.35)+(scoreLabor(s.labor)*0.35)+(scorePreshift(s.preshift)*0.15)+(scoreJolt(s.joltChecklist)*0.15));
+    const psW = ps === null ? 0 : 0.15;
+    const jW = 0.15;
+    const base = 1 - psW - jW;
+    const half = base / 2;
+    return Math.round((oScore*half)+(lScore*half)+(ps===null?0:ps*psW)+(scoreJolt(s.joltChecklist)*jW));
   }
-  return Math.round((scoreOEPE(s.oepe)*0.40)+(scoreLabor(s.labor)*0.40)+(scorePreshift(s.preshift)*0.20));
+  if (ps === null) return Math.round((oScore*0.50)+(lScore*0.50));
+  return Math.round((oScore*0.40)+(lScore*0.40)+(ps*0.20));
 }
 function gradeColor(score) {
   if (score >= 90) return 'green';
@@ -5812,9 +5911,10 @@ function gradeLabel(score) {
   if (score >= 45) return 'D';
   return 'F';
 }
-function metricColor(val, type) {
-  if (type === 'oepe')  return val <= T.oepe.good  ? 'green' : val <= T.oepe.warn  ? 'yellow' : 'red';
-  if (type === 'labor') return val <= T.labor.good ? 'green' : val <= T.labor.warn ? 'yellow' : 'red';
+function metricColor(val, type, shift) {
+  const t = getT(shift || 'Morning');
+  if (type === 'oepe')  return val <= t.oepe.good  ? 'green' : val <= t.oepe.warn  ? 'yellow' : 'red';
+  if (type === 'labor') return val <= t.labor.good ? 'green' : val <= t.labor.warn ? 'yellow' : 'red';
   if (type === 'jolt')  return val >= 95 ? 'green' : val >= 75 ? 'yellow' : 'red';
   return val === 'complete' ? 'green' : val === 'late' ? 'yellow' : 'red';
 }
@@ -5972,12 +6072,12 @@ function renderStoreSummary(managers) {
       <div class="pill-sub">Target ≤110s</div>
     </div>
     <div class="summary-pill">
-      <div class="pill-label">Labor ${laborSource==='actual'?'<span class="source-badge jolt">✓ actual</span>':laborSource==='weighted'?'<span class="source-badge qsr">weighted</span>':'<span style="font-size:9px;color:var(--muted)">avg</span>'}</div>
+      <div class="pill-label">Labor ${laborSource==='actual'?'<span class="source-badge qsr">shift avg</span>':laborSource==='weighted'?'<span class="source-badge qsr">weighted</span>':'<span style="font-size:9px;color:var(--muted)">avg</span>'}</div>
       <div class="pill-value ${metricColor(avgLabor,'labor')}">${avgLabor}%</div>
       <div class="pill-sub">Target ≤27%</div>
     </div>
     <div class="summary-pill">
-      <div class="pill-label">Pre-shift <span class="source-badge qsr">QSR</span></div>
+      <div class="pill-label">Pre-shift <span class="source-badge jolt">Jolt</span></div>
       <div class="pill-value ${psRate>=90?'green':psRate>=70?'yellow':'red'}">${psRate}%</div>
       <div class="pill-sub">${psOk}/${psTotal} on time</div>
     </div>
@@ -6145,8 +6245,8 @@ function openDetail(managerName) {
     return `<tr>
       <td class="td-name">${label}</td>
       <td class="td-name" style="font-size:11px;color:var(--muted)">${s.shift}</td>
-      <td style="color:var(--${metricColor(s.oepe,'oepe')})">${s.oepe}s</td>
-      <td style="color:var(--${metricColor(s.labor,'labor')})">${s.labor}%</td>
+      <td style="color:var(--${metricColor(s.oepe,'oepe',s.shift)})">${s.oepe}s</td>
+      <td style="color:var(--${metricColor(s.labor,'labor',s.shift)})">${s.labor}%</td>
       <td style="color:var(--${psCol})">${psLabel}</td>
       <td class="${gradeColor(sc)}" style="font-weight:700">${sc}</td>
     </tr>`;
@@ -6172,7 +6272,7 @@ function openDetail(managerName) {
           <div class="pill-sub">Avg</div>
         </div>
         <div class="summary-pill">
-          <div class="pill-label">Pre-shift <span class="source-badge qsr">QSR</span></div>
+          <div class="pill-label">Pre-shift <span class="source-badge jolt">Jolt</span></div>
           <div class="pill-value ${m.preshiftRate>=90?'green':m.preshiftRate>=70?'yellow':'red'}">${m.preshiftRate !== null ? m.preshiftRate + '%' : '—'}</div>
           <div class="pill-sub">${m.preshiftRate !== null ? m.preshiftCounts.complete + '/' + (m.n - m.preshiftCounts.unknown) + ' on time' : 'No Jolt data'}</div>
         </div>
