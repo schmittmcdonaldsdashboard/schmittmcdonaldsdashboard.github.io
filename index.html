@@ -6394,7 +6394,7 @@ function calcShiftScore(s) {
   const oScore = scoreOEPE(s.oepe, s.shift);
   const lScore = scoreLabor(s.labor, s.shift);
   // Closing and Overnight have no pre-shift checklist — score on OEPE + Labor only
-  const noPreshift = (s.shift === 'Closing' || s.shift === 'Overnight');
+  const noPreshift = (s.shift === 'Closing' || s.shift === 'Overnight' || s.shift === 'Afternoon');
   if (noPreshift) {
     return Math.round((oScore*0.50)+(lScore*0.50));
   }
@@ -6533,8 +6533,10 @@ function aggregateManagers(data) {
     const avgOepe  = Math.round(shifts.reduce((a,s)=>a+s.oepe,0)/n);
     const avgLabor = Math.round(shifts.reduce((a,s)=>a+s.labor,0)/n * 10) / 10;
     const preshiftCounts = { complete:0, late:0, incomplete:0, unknown:0 };
-    shifts.forEach(s => { if (preshiftCounts[s.preshift] !== undefined) preshiftCounts[s.preshift]++; });
-    const knownPS = n - preshiftCounts.unknown;
+    // Only track pre-shift for Morning, Lunch, Evening — not Afternoon, Closing, Overnight
+    const trackableShifts = shifts.filter(s => s.shift === 'Morning' || s.shift === 'Lunch' || s.shift === 'Evening');
+    trackableShifts.forEach(s => { if (preshiftCounts[s.preshift] !== undefined) preshiftCounts[s.preshift]++; });
+    const knownPS = trackableShifts.length - preshiftCounts.unknown;
     const preshiftRate = knownPS > 0 ? Math.round(preshiftCounts.complete / knownPS * 100) : null;
     const avgScore = Math.round(shifts.reduce((a,s)=>a+calcShiftScore(s),0)/n);
     const avgJolt = null; // Jolt checklist % — pending Jolt API integration
@@ -6565,9 +6567,11 @@ function renderStoreSummary(managers) {
   const trueLaborResult = getTrueLaborForStore(currentStore, rangeFrom, rangeTo);
   const avgLabor = trueLaborResult ? trueLaborResult.pct : Math.round(allShifts.reduce((a,s)=>a+s.labor,0)/allShifts.length * 10) / 10;
   const laborSource = trueLaborResult ? trueLaborResult.source : 'avg';
-  const psTotal   = allShifts.length;
-  const psOk      = allShifts.filter(s=>s.preshift==='complete').length;
-  const psRate    = Math.round(psOk/psTotal*100);
+  const psShifts  = allShifts.filter(s => s.shift === 'Morning' || s.shift === 'Lunch' || s.shift === 'Evening');
+  const psKnown   = psShifts.filter(s => s.preshift !== 'unknown').length;
+  const psOk      = psShifts.filter(s=>s.preshift==='complete').length;
+  const psTotal   = psKnown;
+  const psRate    = psTotal > 0 ? Math.round(psOk/psTotal*100) : null;
 
   const noFlShifts = NO_FL.filter(s => s.store === currentStore && s.date >= rangeFrom && s.date <= rangeTo);
   const noFlCount = noFlShifts.length;
@@ -6589,8 +6593,8 @@ function renderStoreSummary(managers) {
     </div>
     <div class="summary-pill">
       <div class="pill-label">Pre-shift <span class="source-badge jolt">Jolt</span></div>
-      <div class="pill-value ${psRate>=90?'green':psRate>=70?'yellow':'red'}">${psRate}%</div>
-      <div class="pill-sub">${psOk}/${psTotal} on time</div>
+      <div class="pill-value ${psRate>=90?'green':psRate>=70?'yellow':'red'}">${psRate !== null ? psRate + '%' : '—'}</div>
+      <div class="pill-sub">${psRate !== null ? psOk + '/' + psTotal + ' on time' : 'No data'}</div>
     </div>
     <div class="summary-pill">
       <div class="pill-label">Managers</div>
@@ -6609,7 +6613,7 @@ function renderStoreSummary(managers) {
 function renderManagerCard(m) {
   const oepeColor  = metricColor(m.avgOepe, 'oepe');
   const laborColor = metricColor(m.avgLabor, 'labor');
-  const psColor    = m.preshiftRate >= 90 ? 'green' : m.preshiftRate >= 70 ? 'yellow' : 'red';
+  const psColor    = m.preshiftRate === null ? 'muted' : m.preshiftRate >= 90 ? 'green' : m.preshiftRate >= 70 ? 'yellow' : 'red';
 
   // OEPE bar: 0s=100%, 240s=0%
   const oepeBarPct  = Math.max(0, Math.round((1 - m.avgOepe/240)*100));
@@ -6619,7 +6623,7 @@ function renderManagerCard(m) {
   // Pre-shift pips (last N shifts, max 10)
   const recent = m.shifts.slice(-10);
   const pips = recent.map(s => {
-    const noPS = (s.shift==='Closing'||s.shift==='Overnight');
+    const noPS = (s.shift==='Closing'||s.shift==='Overnight'||s.shift==='Afternoon');
     const c = noPS?'empty':s.preshift==='unknown'?'empty':s.preshift==='complete'?'green':s.preshift==='late'?'yellow':'red';
     return `<div class="pip ${c}" title="${s.date} · ${s.shift}: ${s.preshift}"></div>`;
   }).join('');
@@ -6673,15 +6677,21 @@ function renderManagerCard(m) {
 
       <div class="jolt-row">
         <div class="jolt-label">Pre-shift</div>
+        ${m.preshiftRate !== null ? `
         <div class="jolt-bar-wrap"><div class="metric-bar ${psColor}" style="width:${m.preshiftRate}%"></div></div>
         <div class="metric-val ${psColor}">${m.preshiftRate}%</div>
+        ` : `
+        <div style="flex:1;font-size:11px;color:var(--muted);font-style:italic">No AM/Lunch/Evening shifts this period</div>
+        `}
       </div>
 
       <div class="card-footer">
         <div class="shift-count">
+          ${m.preshiftRate !== null ? `
           <span style="color:var(--green)">▪</span> ${m.preshiftCounts.complete} complete
           <span style="color:var(--yellow);margin-left:8px">▪</span> ${m.preshiftCounts.late} late
           <span style="color:var(--red);margin-left:8px">▪</span> ${m.preshiftCounts.incomplete} missed
+          ` : `<span style="color:var(--muted);font-size:10px">Pre-shift tracked for Morning · Lunch · Evening only</span>`}
         </div>
         <div class="view-link">Details →</div>
       </div>
@@ -6750,7 +6760,7 @@ function openDetail(managerName) {
   // Individual shift rows for filtered period
   const shiftRows = filtered.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(s => {
     const sc = calcShiftScore(s);
-    const noPS = (s.shift==='Closing'||s.shift==='Overnight');
+    const noPS = (s.shift==='Closing'||s.shift==='Overnight'||s.shift==='Afternoon');
     const psLabel = noPS?'N/A':s.preshift==='unknown'?'—':s.preshift==='complete'?'✓':s.preshift==='late'?'⚠':'✗';
     const psCol   = noPS?'muted':s.preshift==='unknown'?'muted':s.preshift==='complete'?'green':s.preshift==='late'?'yellow':'red';
     const d = new Date(s.date);
@@ -6787,7 +6797,7 @@ function openDetail(managerName) {
         <div class="summary-pill">
           <div class="pill-label">Pre-shift <span class="source-badge jolt">Jolt</span></div>
           <div class="pill-value ${m.preshiftRate>=90?'green':m.preshiftRate>=70?'yellow':'red'}">${m.preshiftRate !== null ? m.preshiftRate + '%' : '—'}</div>
-          <div class="pill-sub">${m.preshiftRate !== null ? m.preshiftCounts.complete + '/' + (m.n - m.preshiftCounts.unknown) + ' on time' : 'No Jolt data'}</div>
+          <div class="pill-sub">${m.preshiftRate !== null ? m.preshiftCounts.complete + '/' + (m.preshiftCounts.complete + m.preshiftCounts.late + m.preshiftCounts.incomplete) + ' on time' : 'No Jolt data'}</div>
         </div>
         <div class="summary-pill">
           <div class="pill-label">Shifts</div>
