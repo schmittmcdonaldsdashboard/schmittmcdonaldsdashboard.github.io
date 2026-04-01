@@ -6243,8 +6243,6 @@ function buildOrgChart() {
   const lc = avgLabor <= 27  ? 'g' : avgLabor <= 32  ? 'y' : 'r';
 
   document.getElementById('heroKpis').innerHTML = `
-    <div class="kpi"><div class="kpi-label">Org Avg OEPE</div><div class="kpi-val ${oc}">${avgOepe}s</div><div class="kpi-sub">Target ≤ 110s</div></div>
-    <div class="kpi"><div class="kpi-label">Org Avg Labor</div><div class="kpi-val ${lc}">${avgLabor}%</div><div class="kpi-sub">Target ≤ 27%</div></div>
     <div class="kpi"><div class="kpi-label">Total Shifts</div><div class="kpi-val b">${q1.length.toLocaleString()}</div><div class="kpi-sub">Q1 2026</div></div>
     <div class="kpi"><div class="kpi-label">Stores</div><div class="kpi-val b">13</div><div class="kpi-sub">All locations</div></div>
     <div class="kpi"><div class="kpi-label">Days Tracked</div><div class="kpi-val b">${dates.length}</div><div class="kpi-sub">Jan 1 – Mar 31</div></div>
